@@ -10,6 +10,7 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Dropdown from 'primevue/dropdown'
+import MultiSelect from 'primevue/multiselect'
 import Calendar from 'primevue/calendar'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
@@ -39,6 +40,21 @@ const { data: categorias } = useQuery({
   queryKey: ['categorias'],
   queryFn: () => categoriasService.getAll()
 })
+
+// Filtro por categorías
+const selectedCategorias = ref([])
+
+const gastosFiltrados = computed(() => {
+  if (!gastos.value) return []
+  if (selectedCategorias.value.length === 0) return gastos.value
+
+  const selectedIds = selectedCategorias.value.map(c => c.id)
+  return gastos.value.filter(g => selectedIds.includes(g.categoriaId))
+})
+
+const clearFilter = () => {
+  selectedCategorias.value = []
+}
 
 // Mutations
 // Invalida todas las queries relacionadas con gastos
@@ -159,9 +175,47 @@ const formatDate = (date) => {
       />
     </div>
 
+    <!-- Filtro por categorías -->
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+      <div class="flex items-center gap-3">
+        <label class="text-sm font-medium text-gray-700">Filtrar por categoría:</label>
+        <MultiSelect
+          v-model="selectedCategorias"
+          :options="categorias ?? []"
+          optionLabel="nombre"
+          placeholder="Todas las categorías"
+          :maxSelectedLabels="3"
+          class="w-80"
+          display="chip"
+          filter
+          filterPlaceholder="Buscar categoría..."
+        >
+          <template #option="{ option }">
+            <div class="flex items-center">
+              <i :class="option.icono" :style="{ color: option.color }" class="mr-2"></i>
+              {{ option.nombre }}
+            </div>
+          </template>
+          <template #chip="{ value }">
+            <div class="flex items-center">
+              <i :class="value.icono" :style="{ color: value.color }" class="mr-1 text-xs"></i>
+              {{ value.nombre }}
+            </div>
+          </template>
+        </MultiSelect>
+        <Button
+          v-if="selectedCategorias.length > 0"
+          icon="pi pi-times"
+          class="p-button-text p-button-sm"
+          @click="clearFilter"
+          v-tooltip.top="'Limpiar filtro'"
+        />
+      </div>
+    </div>
+
     <div class="bg-white rounded-lg shadow-sm">
       <DataTable
-        :value="gastos ?? []"
+        :value="gastosFiltrados"
         :loading="isLoading"
         paginator
         :rows="10"
@@ -304,7 +358,12 @@ const formatDate = (date) => {
 :deep(.p-inputnumber),
 :deep(.p-calendar),
 :deep(.p-dropdown),
-:deep(.p-inputtextarea) {
+:deep(.p-inputtextarea),
+:deep(.p-multiselect) {
   width: 100%;
+}
+
+:deep(.p-multiselect.w-80) {
+  width: 20rem;
 }
 </style>
