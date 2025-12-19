@@ -3,6 +3,10 @@ import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'primevue/usetoast'
+import InputText from 'primevue/inputtext'
+import Password from 'primevue/password'
+import Button from 'primevue/button'
+import Toast from 'primevue/toast'
 
 const authStore = useAuthStore()
 const toast = useToast()
