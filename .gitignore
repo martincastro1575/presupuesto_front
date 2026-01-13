@@ -36,3 +36,6 @@ lerna-debug.log*
 # Testing
 coverage
 *.lcov
+
+# Claude Code temp files
+tmpclaude-*
