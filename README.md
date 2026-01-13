@@ -80,12 +80,12 @@ src/
 
 | Ruta | Pagina | Descripcion |
 |------|--------|-------------|
-| `/` | Dashboard | Resumen general con metricas |
-| `/gastos` | Gastos | CRUD de gastos |
-| `/ingresos` | Ingresos | CRUD de ingresos |
-| `/categorias` | Categorias | Gestion de categorias de gastos |
-| `/presupuestos` | Presupuestos | Configuracion de presupuestos |
-| `/reportes` | Reportes | Graficos y estadisticas |
+| `/` | Dashboard | Resumen con ingresos, gastos, balance y graficos de evolucion |
+| `/gastos` | Gastos | CRUD de gastos con filtro por categoria |
+| `/ingresos` | Ingresos | CRUD de ingresos con filtro por categoria |
+| `/categorias` | Categorias | Gestion de categorias (Gasto, Ingreso o Ambos) |
+| `/presupuestos` | Presupuestos | Configuracion de presupuestos por categoria |
+| `/reportes` | Reportes | Graficos comparativos de ingresos/gastos por categoria y evolucion |
 | `/auth/login` | Login | Inicio de sesion |
 | `/auth/register` | Registro | Registro de usuario |
 
@@ -149,6 +149,37 @@ await ingresosService.create({
 
 // Obtener por periodo
 const ingresosEnero = await ingresosService.getByPeriod(2024, 1)
+```
+
+### Reportes
+```javascript
+import { reportesService } from '@/services/reportes.service'
+
+// Resumen mensual (incluye totalIngresos, totalGastado, balance)
+const resumen = await reportesService.getResumenMensual(2024, 1)
+
+// Evolucion mensual (incluye ingresos y gastos por mes)
+const evolucion = await reportesService.getEvolucionMensual(12)
+
+// Gastos agrupados por categoria
+const gastosPorCategoria = await reportesService.getGastosPorCategoria(2024, 1)
+
+// Ingresos agrupados por categoria
+const ingresosPorCategoria = await reportesService.getIngresosPorCategoria(2024, 1)
+```
+
+### Categorias
+```javascript
+import { categoriasService, TipoCategoria } from '@/services/categorias.service'
+
+// Obtener categorias para gastos (tipo Gasto o Ambos)
+const categoriasGasto = await categoriasService.getForGastos()
+
+// Obtener categorias para ingresos (tipo Ingreso o Ambos)
+const categoriasIngreso = await categoriasService.getForIngresos()
+
+// Obtener todas las categorias
+const todas = await categoriasService.getAll()
 ```
 
 ## Componentes PrimeVue Utilizados
