@@ -46,6 +46,11 @@ const { data: gastosPorCategoria, isLoading: loadingCategorias } = useQuery({
   queryFn: () => reportesService.getGastosPorCategoria(selectedYear.value, selectedMonth.value)
 })
 
+const { data: ingresosPorCategoria, isLoading: loadingIngresosCategoria } = useQuery({
+  queryKey: ['ingresos-categoria', selectedYear, selectedMonth],
+  queryFn: () => reportesService.getIngresosPorCategoria(selectedYear.value, selectedMonth.value)
+})
+
 const { data: presupuestos, isLoading: loadingPresupuestos } = useQuery({
   queryKey: ['presupuestos-reporte', selectedYear, selectedMonth],
   queryFn: () => presupuestosService.getByPeriod(selectedYear.value, selectedMonth.value)
@@ -90,7 +95,7 @@ const barOptions = {
   }
 }
 
-// Chart data para evolución
+// Chart data para evolución (gastos e ingresos)
 const lineData = computed(() => {
   if (!evolucion.value) return null
 
@@ -98,11 +103,19 @@ const lineData = computed(() => {
     labels: evolucion.value.map(e => e.mesNombre),
     datasets: [
       {
-        label: 'Gastos Mensuales',
+        label: 'Ingresos',
+        data: evolucion.value.map(e => e.totalIngresos),
+        fill: false,
+        borderColor: '#22c55e',
+        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+        tension: 0.4
+      },
+      {
+        label: 'Gastos',
         data: evolucion.value.map(e => e.totalGastado),
-        fill: true,
-        borderColor: '#0ea5e9',
-        backgroundColor: 'rgba(14, 165, 233, 0.2)',
+        fill: false,
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.2)',
         tension: 0.4
       }
     ]
@@ -114,7 +127,8 @@ const lineOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      display: false
+      display: true,
+      position: 'top'
     }
   },
   scales: {
@@ -126,6 +140,22 @@ const lineOptions = {
     }
   }
 }
+
+// Chart data para ingresos por categoría
+const ingresosBarData = computed(() => {
+  if (!ingresosPorCategoria.value?.length) return null
+
+  return {
+    labels: ingresosPorCategoria.value.map(c => c.categoriaNombre),
+    datasets: [
+      {
+        label: 'Ingresos',
+        data: ingresosPorCategoria.value.map(c => c.totalMonto),
+        backgroundColor: ingresosPorCategoria.value.map(c => c.categoriaColor)
+      }
+    ]
+  }
+})
 
 // Chart data para comparativo presupuesto vs gastos
 const comparativoData = computed(() => {
@@ -207,14 +237,27 @@ const formatCurrency = (value) => {
     </div>
 
     <!-- Resumen del mes -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       <Card class="shadow-sm">
         <template #content>
           <div class="text-center">
-            <i class="pi pi-wallet text-blue-500 text-2xl mb-2"></i>
+            <i class="pi pi-arrow-down text-green-500 text-2xl mb-2"></i>
+            <p class="text-gray-500 text-sm">Total Ingresos</p>
+            <Skeleton v-if="loadingResumen" width="80px" height="24px" class="mx-auto" />
+            <p v-else class="text-xl font-bold text-green-600">
+              {{ formatCurrency(resumen?.totalIngresos) }}
+            </p>
+          </div>
+        </template>
+      </Card>
+
+      <Card class="shadow-sm">
+        <template #content>
+          <div class="text-center">
+            <i class="pi pi-arrow-up text-red-500 text-2xl mb-2"></i>
             <p class="text-gray-500 text-sm">Total Gastado</p>
             <Skeleton v-if="loadingResumen" width="80px" height="24px" class="mx-auto" />
-            <p v-else class="text-xl font-bold text-gray-800">
+            <p v-else class="text-xl font-bold text-red-600">
               {{ formatCurrency(resumen?.totalGastado) }}
             </p>
           </div>
@@ -224,7 +267,20 @@ const formatCurrency = (value) => {
       <Card class="shadow-sm">
         <template #content>
           <div class="text-center">
-            <i class="pi pi-chart-bar text-green-500 text-2xl mb-2"></i>
+            <i class="pi pi-wallet text-2xl mb-2" :class="(resumen?.balance ?? 0) >= 0 ? 'text-blue-500' : 'text-orange-500'"></i>
+            <p class="text-gray-500 text-sm">Balance</p>
+            <Skeleton v-if="loadingResumen" width="80px" height="24px" class="mx-auto" />
+            <p v-else class="text-xl font-bold" :class="(resumen?.balance ?? 0) >= 0 ? 'text-blue-600' : 'text-orange-600'">
+              {{ formatCurrency(resumen?.balance) }}
+            </p>
+          </div>
+        </template>
+      </Card>
+
+      <Card class="shadow-sm">
+        <template #content>
+          <div class="text-center">
+            <i class="pi pi-chart-bar text-purple-500 text-2xl mb-2"></i>
             <p class="text-gray-500 text-sm">Promedio por Gasto</p>
             <Skeleton v-if="loadingResumen" width="80px" height="24px" class="mx-auto" />
             <p v-else class="text-xl font-bold text-gray-800">
@@ -237,20 +293,7 @@ const formatCurrency = (value) => {
       <Card class="shadow-sm">
         <template #content>
           <div class="text-center">
-            <i class="pi pi-shopping-cart text-purple-500 text-2xl mb-2"></i>
-            <p class="text-gray-500 text-sm">Cantidad de Gastos</p>
-            <Skeleton v-if="loadingResumen" width="40px" height="24px" class="mx-auto" />
-            <p v-else class="text-xl font-bold text-gray-800">
-              {{ resumen?.cantidadGastos || 0 }}
-            </p>
-          </div>
-        </template>
-      </Card>
-
-      <Card class="shadow-sm">
-        <template #content>
-          <div class="text-center">
-            <i class="pi pi-calendar text-orange-500 text-2xl mb-2"></i>
+            <i class="pi pi-calendar text-gray-500 text-2xl mb-2"></i>
             <p class="text-gray-500 text-sm">Período</p>
             <p class="text-xl font-bold text-gray-800">
               {{ meses.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }}
@@ -266,7 +309,7 @@ const formatCurrency = (value) => {
       <Card class="shadow-sm">
         <template #title>
           <div class="flex items-center">
-            <i class="pi pi-chart-bar mr-2 text-primary-500"></i>
+            <i class="pi pi-chart-bar mr-2 text-red-500"></i>
             Gastos por Categoría
           </div>
         </template>
@@ -281,13 +324,40 @@ const formatCurrency = (value) => {
               class="h-full"
             />
             <div v-else class="h-full flex items-center justify-center text-gray-400">
-              No hay datos disponibles
+              No hay gastos en este período
             </div>
           </div>
         </template>
       </Card>
 
-      <!-- Comparativo Presupuesto -->
+      <!-- Ingresos por Categoría -->
+      <Card class="shadow-sm">
+        <template #title>
+          <div class="flex items-center">
+            <i class="pi pi-chart-bar mr-2 text-green-500"></i>
+            Ingresos por Categoría
+          </div>
+        </template>
+        <template #content>
+          <div class="h-72">
+            <Skeleton v-if="loadingIngresosCategoria" height="100%" />
+            <Chart
+              v-else-if="ingresosBarData"
+              type="bar"
+              :data="ingresosBarData"
+              :options="barOptions"
+              class="h-full"
+            />
+            <div v-else class="h-full flex items-center justify-center text-gray-400">
+              No hay ingresos en este período
+            </div>
+          </div>
+        </template>
+      </Card>
+    </div>
+
+    <!-- Presupuesto vs Gastado -->
+    <div class="grid grid-cols-1 gap-6 mb-6">
       <Card class="shadow-sm">
         <template #title>
           <div class="flex items-center">
@@ -318,7 +388,7 @@ const formatCurrency = (value) => {
       <template #title>
         <div class="flex items-center">
           <i class="pi pi-chart-line mr-2 text-primary-500"></i>
-          Evolución de Gastos (Últimos 12 meses)
+          Evolución de Ingresos y Gastos (Últimos 12 meses)
         </div>
       </template>
       <template #content>
@@ -338,12 +408,12 @@ const formatCurrency = (value) => {
       </template>
     </Card>
 
-    <!-- Detalle por Categoría -->
+    <!-- Detalle de Gastos por Categoría -->
     <Card class="shadow-sm">
       <template #title>
         <div class="flex items-center">
-          <i class="pi pi-list mr-2 text-primary-500"></i>
-          Detalle por Categoría
+          <i class="pi pi-list mr-2 text-red-500"></i>
+          Detalle de Gastos por Categoría
         </div>
       </template>
       <template #content>
@@ -384,6 +454,59 @@ const formatCurrency = (value) => {
             <template #body="{ data }">
               <span class="text-gray-600">
                 {{ resumen?.totalGastado ? Math.round((data.totalMonto / resumen.totalGastado) * 100) : 0 }}%
+              </span>
+            </template>
+          </Column>
+        </DataTable>
+      </template>
+    </Card>
+
+    <!-- Detalle de Ingresos por Categoría -->
+    <Card class="shadow-sm mt-6">
+      <template #title>
+        <div class="flex items-center">
+          <i class="pi pi-list mr-2 text-green-500"></i>
+          Detalle de Ingresos por Categoría
+        </div>
+      </template>
+      <template #content>
+        <DataTable
+          :value="ingresosPorCategoria"
+          :loading="loadingIngresosCategoria"
+          stripedRows
+          class="p-datatable-sm"
+        >
+          <template #empty>
+            <div class="text-center py-4 text-gray-400">
+              No hay ingresos en este período
+            </div>
+          </template>
+
+          <Column header="Categoría">
+            <template #body="{ data }">
+              <Tag :style="{ backgroundColor: data.categoriaColor }" class="text-white">
+                <i :class="data.categoriaIcono" class="mr-1"></i>
+                {{ data.categoriaNombre }}
+              </Tag>
+            </template>
+          </Column>
+
+          <Column header="Cantidad">
+            <template #body="{ data }">
+              {{ data.cantidadIngresos }} ingresos
+            </template>
+          </Column>
+
+          <Column header="Total">
+            <template #body="{ data }">
+              <span class="font-semibold text-green-600">{{ formatCurrency(data.totalMonto) }}</span>
+            </template>
+          </Column>
+
+          <Column header="% del Total">
+            <template #body="{ data }">
+              <span class="text-gray-600">
+                {{ resumen?.totalIngresos ? Math.round((data.totalMonto / resumen.totalIngresos) * 100) : 0 }}%
               </span>
             </template>
           </Column>

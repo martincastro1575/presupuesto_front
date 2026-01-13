@@ -3,15 +3,32 @@ import api from './api'
 // Helper para extraer array de la respuesta
 const extractArray = (data) => {
   if (Array.isArray(data)) return data
+  if (data?.data?.items) return data.data.items
   if (data?.items) return data.items
-  if (data?.data) return data.data
+  if (data?.data && Array.isArray(data.data)) return data.data
   return []
 }
 
+// Enum para tipos de categoria
+export const TipoCategoria = {
+  Gasto: 1,
+  Ingreso: 2,
+  Ambos: 3
+}
+
 export const categoriasService = {
-  async getAll() {
-    const response = await api.get('/Categorias')
+  async getAll(tipo = null) {
+    const params = tipo ? { tipo } : {}
+    const response = await api.get('/Categorias', { params })
     return extractArray(response.data)
+  },
+
+  async getForGastos() {
+    return this.getAll(TipoCategoria.Gasto)
+  },
+
+  async getForIngresos() {
+    return this.getAll(TipoCategoria.Ingreso)
   },
 
   async getById(id) {

@@ -28,6 +28,13 @@ export const reportesService = {
     return extractData(response.data)
   },
 
+  async getIngresosPorCategoria(year, month) {
+    const response = await api.get('/Reportes/ingresos-por-categoria', {
+      params: { anio: year, mes: month }
+    })
+    return extractData(response.data)
+  },
+
   async getComparativoPresupuesto(year, month) {
     const response = await api.get('/Reportes/comparativo')
     return extractData(response.data)

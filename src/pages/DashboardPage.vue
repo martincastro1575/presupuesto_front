@@ -29,7 +29,7 @@ const { data: gastosPorCategoria, isLoading: loadingCategorias } = useQuery({
   queryFn: () => reportesService.getGastosPorCategoria(currentYear, currentMonth)
 })
 
-// Chart data para evolución
+// Chart data para evolución (gastos e ingresos)
 const chartData = computed(() => {
   if (!evolucion.value) return null
 
@@ -37,11 +37,19 @@ const chartData = computed(() => {
     labels: evolucion.value.map(e => e.mesNombre),
     datasets: [
       {
-        label: 'Gastos Mensuales',
+        label: 'Ingresos',
+        data: evolucion.value.map(e => e.totalIngresos),
+        fill: false,
+        borderColor: '#22c55e',
+        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+        tension: 0.4
+      },
+      {
+        label: 'Gastos',
         data: evolucion.value.map(e => e.totalGastado),
-        fill: true,
-        borderColor: '#0ea5e9',
-        backgroundColor: 'rgba(14, 165, 233, 0.2)',
+        fill: false,
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.2)',
         tension: 0.4
       }
     ]
@@ -53,7 +61,8 @@ const chartOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      display: false
+      display: true,
+      position: 'top'
     }
   },
   scales: {
@@ -104,17 +113,34 @@ const formatCurrency = (value) => {
     <h1 class="text-2xl font-bold text-gray-800 mb-6">Dashboard</h1>
 
     <!-- Resumen Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
       <Card class="shadow-sm">
         <template #content>
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100 mr-4">
-              <i class="pi pi-wallet text-blue-600 text-xl"></i>
+            <div class="p-3 rounded-full bg-green-100 mr-4">
+              <i class="pi pi-arrow-down text-green-600 text-xl"></i>
+            </div>
+            <div>
+              <p class="text-gray-500 text-sm">Ingresos del Mes</p>
+              <Skeleton v-if="loadingResumen" width="100px" height="24px" />
+              <p v-else class="text-2xl font-bold text-green-600">
+                {{ formatCurrency(resumen?.totalIngresos) }}
+              </p>
+            </div>
+          </div>
+        </template>
+      </Card>
+
+      <Card class="shadow-sm">
+        <template #content>
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100 mr-4">
+              <i class="pi pi-arrow-up text-red-600 text-xl"></i>
             </div>
             <div>
               <p class="text-gray-500 text-sm">Gastos del Mes</p>
               <Skeleton v-if="loadingResumen" width="100px" height="24px" />
-              <p v-else class="text-2xl font-bold text-gray-800">
+              <p v-else class="text-2xl font-bold text-red-600">
                 {{ formatCurrency(resumen?.totalGastado) }}
               </p>
             </div>
@@ -125,14 +151,14 @@ const formatCurrency = (value) => {
       <Card class="shadow-sm">
         <template #content>
           <div class="flex items-center">
-            <div class="p-3 rounded-full bg-green-100 mr-4">
-              <i class="pi pi-chart-line text-green-600 text-xl"></i>
+            <div class="p-3 rounded-full mr-4" :class="(resumen?.balance ?? 0) >= 0 ? 'bg-blue-100' : 'bg-orange-100'">
+              <i class="pi pi-wallet text-xl" :class="(resumen?.balance ?? 0) >= 0 ? 'text-blue-600' : 'text-orange-600'"></i>
             </div>
             <div>
-              <p class="text-gray-500 text-sm">Promedio por Gasto</p>
+              <p class="text-gray-500 text-sm">Balance</p>
               <Skeleton v-if="loadingResumen" width="100px" height="24px" />
-              <p v-else class="text-2xl font-bold text-gray-800">
-                {{ formatCurrency(resumen?.promedioGasto) }}
+              <p v-else class="text-2xl font-bold" :class="(resumen?.balance ?? 0) >= 0 ? 'text-blue-600' : 'text-orange-600'">
+                {{ formatCurrency(resumen?.balance) }}
               </p>
             </div>
           </div>
@@ -143,13 +169,13 @@ const formatCurrency = (value) => {
         <template #content>
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-purple-100 mr-4">
-              <i class="pi pi-shopping-cart text-purple-600 text-xl"></i>
+              <i class="pi pi-chart-bar text-purple-600 text-xl"></i>
             </div>
             <div>
-              <p class="text-gray-500 text-sm">Cantidad de Gastos</p>
-              <Skeleton v-if="loadingResumen" width="60px" height="24px" />
+              <p class="text-gray-500 text-sm">Promedio por Gasto</p>
+              <Skeleton v-if="loadingResumen" width="100px" height="24px" />
               <p v-else class="text-2xl font-bold text-gray-800">
-                {{ resumen?.cantidadGastos || 0 }}
+                {{ formatCurrency(resumen?.promedioGasto) }}
               </p>
             </div>
           </div>

@@ -3,18 +3,12 @@ import api from './api'
 export const gastosService = {
   async getAll(params = {}) {
     const response = await api.get('/Gastos', { params })
-    console.log('Gastos API response:', response.data)
-    // Si la respuesta es un objeto con items/data, extraer el array
+    // Estructura: { success, data: { items: [...] } }
     const data = response.data
-    if (Array.isArray(data)) {
-      return data
-    }
-    if (data?.items) {
-      return data.items
-    }
-    if (data?.data) {
-      return data.data
-    }
+    if (Array.isArray(data)) return data
+    if (data?.data?.items) return data.data.items
+    if (data?.items) return data.items
+    if (data?.data && Array.isArray(data.data)) return data.data
     return []
   },
 
