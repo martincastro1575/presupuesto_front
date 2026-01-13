@@ -1,7 +1,7 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { categoriasService } from '@/services/categorias.service'
+import { categoriasService, TipoCategoria } from '@/services/categorias.service'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
@@ -10,6 +10,7 @@ import InputText from 'primevue/inputtext'
 import ColorPicker from 'primevue/colorpicker'
 import Dropdown from 'primevue/dropdown'
 import Tag from 'primevue/tag'
+import SelectButton from 'primevue/selectbutton'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 
@@ -22,22 +23,42 @@ const editingCategoria = ref(null)
 const form = ref({
   nombre: '',
   icono: 'pi-tag',
-  color: '6366f1'
+  color: '6366f1',
+  tipo: TipoCategoria.Gasto
 })
+
+// Filtro por tipo
+const filterTipo = ref(null)
+
+const tipoOptions = [
+  { label: 'Gasto', value: TipoCategoria.Gasto },
+  { label: 'Ingreso', value: TipoCategoria.Ingreso }
+]
+
+const filterOptions = [
+  { label: 'Todos', value: null },
+  { label: 'Gastos', value: TipoCategoria.Gasto },
+  { label: 'Ingresos', value: TipoCategoria.Ingreso }
+]
 
 const iconOptions = [
   { label: 'Carrito', value: 'pi-shopping-cart' },
   { label: 'Auto', value: 'pi-car' },
   { label: 'Rayo', value: 'pi-bolt' },
   { label: 'Ticket', value: 'pi-ticket' },
-  { label: 'Corazón', value: 'pi-heart' },
+  { label: 'Corazon', value: 'pi-heart' },
   { label: 'Libro', value: 'pi-book' },
   { label: 'Casa', value: 'pi-home' },
   { label: 'Etiqueta', value: 'pi-tag' },
   { label: 'Billetera', value: 'pi-wallet' },
   { label: 'Regalo', value: 'pi-gift' },
-  { label: 'Teléfono', value: 'pi-phone' },
-  { label: 'Wifi', value: 'pi-wifi' }
+  { label: 'Telefono', value: 'pi-phone' },
+  { label: 'Wifi', value: 'pi-wifi' },
+  { label: 'Maletin', value: 'pi-briefcase' },
+  { label: 'Codigo', value: 'pi-code' },
+  { label: 'Grafico', value: 'pi-chart-line' },
+  { label: 'Dolar', value: 'pi-dollar' },
+  { label: 'Replay', value: 'pi-replay' }
 ]
 
 // Queries
@@ -46,16 +67,42 @@ const { data: categorias, isLoading } = useQuery({
   queryFn: () => categoriasService.getAll()
 })
 
+const categoriasFiltradas = computed(() => {
+  if (!categorias.value) return []
+  if (filterTipo.value === null) return categorias.value
+  return categorias.value.filter(c => c.tipo === filterTipo.value)
+})
+
+const getTipoLabel = (tipo) => {
+  switch (tipo) {
+    case TipoCategoria.Gasto: return 'Gasto'
+    case TipoCategoria.Ingreso: return 'Ingreso'
+    case TipoCategoria.Ambos: return 'Ambos'
+    default: return '-'
+  }
+}
+
+const getTipoSeverity = (tipo) => {
+  switch (tipo) {
+    case TipoCategoria.Gasto: return 'danger'
+    case TipoCategoria.Ingreso: return 'success'
+    case TipoCategoria.Ambos: return 'info'
+    default: return 'secondary'
+  }
+}
+
 // Mutations
 const createMutation = useMutation({
   mutationFn: categoriasService.create,
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['categorias'] })
-    toast.add({ severity: 'success', summary: 'Éxito', detail: 'Categoría creada correctamente', life: 3000 })
+    queryClient.invalidateQueries({ queryKey: ['categorias-gasto'] })
+    queryClient.invalidateQueries({ queryKey: ['categorias-ingreso'] })
+    toast.add({ severity: 'success', summary: 'Exito', detail: 'Categoria creada correctamente', life: 3000 })
     closeDialog()
   },
   onError: (error) => {
-    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al crear categoría', life: 5000 })
+    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al crear categoria', life: 5000 })
   }
 })
 
@@ -63,11 +110,13 @@ const updateMutation = useMutation({
   mutationFn: ({ id, data }) => categoriasService.update(id, data),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['categorias'] })
-    toast.add({ severity: 'success', summary: 'Éxito', detail: 'Categoría actualizada correctamente', life: 3000 })
+    queryClient.invalidateQueries({ queryKey: ['categorias-gasto'] })
+    queryClient.invalidateQueries({ queryKey: ['categorias-ingreso'] })
+    toast.add({ severity: 'success', summary: 'Exito', detail: 'Categoria actualizada correctamente', life: 3000 })
     closeDialog()
   },
   onError: (error) => {
-    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al actualizar categoría', life: 5000 })
+    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al actualizar categoria', life: 5000 })
   }
 })
 
@@ -75,10 +124,12 @@ const deleteMutation = useMutation({
   mutationFn: categoriasService.delete,
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['categorias'] })
-    toast.add({ severity: 'success', summary: 'Éxito', detail: 'Categoría eliminada correctamente', life: 3000 })
+    queryClient.invalidateQueries({ queryKey: ['categorias-gasto'] })
+    queryClient.invalidateQueries({ queryKey: ['categorias-ingreso'] })
+    toast.add({ severity: 'success', summary: 'Exito', detail: 'Categoria eliminada correctamente', life: 3000 })
   },
   onError: (error) => {
-    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al eliminar categoría', life: 5000 })
+    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al eliminar categoria', life: 5000 })
   }
 })
 
@@ -87,7 +138,8 @@ const openNewDialog = () => {
   form.value = {
     nombre: '',
     icono: 'pi-tag',
-    color: '6366f1'
+    color: '6366f1',
+    tipo: TipoCategoria.Gasto
   }
   showDialog.value = true
 }
@@ -97,7 +149,8 @@ const openEditDialog = (categoria) => {
   form.value = {
     nombre: categoria.nombre,
     icono: categoria.icono,
-    color: categoria.color.replace('#', '')
+    color: categoria.color.replace('#', ''),
+    tipo: categoria.tipo
   }
   showDialog.value = true
 }
@@ -122,13 +175,13 @@ const handleSubmit = () => {
 
 const confirmDelete = (categoria) => {
   if (categoria.esPredefinida) {
-    toast.add({ severity: 'warn', summary: 'Advertencia', detail: 'No se pueden eliminar categorías predefinidas', life: 3000 })
+    toast.add({ severity: 'warn', summary: 'Advertencia', detail: 'No se pueden eliminar categorias predefinidas', life: 3000 })
     return
   }
 
   confirm.require({
-    message: '¿Estás seguro de eliminar esta categoría?',
-    header: 'Confirmar Eliminación',
+    message: 'Estas seguro de eliminar esta categoria?',
+    header: 'Confirmar Eliminacion',
     icon: 'pi pi-exclamation-triangle',
     acceptClass: 'p-button-danger',
     accept: () => deleteMutation.mutate(categoria.id)
@@ -139,17 +192,30 @@ const confirmDelete = (categoria) => {
 <template>
   <div>
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">Categorías</h1>
+      <h1 class="text-2xl font-bold text-gray-800">Categorias</h1>
       <Button
-        label="Nueva Categoría"
+        label="Nueva Categoria"
         icon="pi pi-plus"
         @click="openNewDialog"
       />
     </div>
 
+    <!-- Filtro por tipo -->
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+      <div class="flex items-center gap-3">
+        <label class="text-sm font-medium text-gray-700">Filtrar por tipo:</label>
+        <SelectButton
+          v-model="filterTipo"
+          :options="filterOptions"
+          optionLabel="label"
+          optionValue="value"
+        />
+      </div>
+    </div>
+
     <div class="bg-white rounded-lg shadow-sm">
       <DataTable
-        :value="categorias"
+        :value="categoriasFiltradas"
         :loading="isLoading"
         paginator
         :rows="10"
@@ -159,7 +225,7 @@ const confirmDelete = (categoria) => {
         <template #empty>
           <div class="text-center py-8 text-gray-400">
             <i class="pi pi-inbox text-4xl mb-2"></i>
-            <p>No hay categorías registradas</p>
+            <p>No hay categorias registradas</p>
           </div>
         </template>
 
@@ -176,11 +242,20 @@ const confirmDelete = (categoria) => {
 
         <Column field="nombre" header="Nombre" sortable />
 
-        <Column header="Tipo" style="width: 150px">
+        <Column header="Tipo" style="width: 120px">
+          <template #body="{ data }">
+            <Tag
+              :value="getTipoLabel(data.tipo)"
+              :severity="getTipoSeverity(data.tipo)"
+            />
+          </template>
+        </Column>
+
+        <Column header="Origen" style="width: 150px">
           <template #body="{ data }">
             <Tag
               :value="data.esPredefinida ? 'Predefinida' : 'Personalizada'"
-              :severity="data.esPredefinida ? 'info' : 'success'"
+              :severity="data.esPredefinida ? 'secondary' : 'info'"
             />
           </template>
         </Column>
@@ -209,7 +284,7 @@ const confirmDelete = (categoria) => {
     <!-- Dialog para crear/editar -->
     <Dialog
       v-model:visible="showDialog"
-      :header="editingCategoria ? 'Editar Categoría' : 'Nueva Categoría'"
+      :header="editingCategoria ? 'Editar Categoria' : 'Nueva Categoria'"
       :modal="true"
       :style="{ width: '400px' }"
     >
@@ -219,8 +294,19 @@ const confirmDelete = (categoria) => {
           <InputText
             v-model="form.nombre"
             class="w-full"
-            placeholder="Nombre de la categoría"
+            placeholder="Nombre de la categoria"
             required
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+          <SelectButton
+            v-model="form.tipo"
+            :options="tipoOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
           />
         </div>
 
@@ -282,5 +368,13 @@ const confirmDelete = (categoria) => {
 :deep(.p-inputtext),
 :deep(.p-dropdown) {
   width: 100%;
+}
+
+:deep(.p-selectbutton) {
+  display: flex;
+}
+
+:deep(.p-selectbutton .p-button) {
+  flex: 1;
 }
 </style>

@@ -10,10 +10,11 @@ const model = ref([
         ]
     },
     {
-        label: 'Gestión',
+        label: 'Gestion',
         items: [
             { label: 'Gastos', icon: 'pi pi-fw pi-credit-card', to: '/gastos' },
-            { label: 'Categorías', icon: 'pi pi-fw pi-tags', to: '/categorias' },
+            { label: 'Ingresos', icon: 'pi pi-fw pi-wallet', to: '/ingresos' },
+            { label: 'Categorias', icon: 'pi pi-fw pi-tags', to: '/categorias' },
             { label: 'Presupuestos', icon: 'pi pi-fw pi-chart-pie', to: '/presupuestos' }
         ]
     },

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { gastosService } from '@/services/gastos.service'
+import { ingresosService } from '@/services/ingresos.service'
 import { categoriasService } from '@/services/categorias.service'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -22,34 +22,35 @@ const confirm = useConfirm()
 const queryClient = useQueryClient()
 
 const showDialog = ref(false)
-const editingGasto = ref(null)
+const editingIngreso = ref(null)
 const form = ref({
   monto: null,
   fecha: new Date(),
   categoriaId: null,
+  concepto: '',
   descripcion: ''
 })
 
 // Queries
-const { data: gastos, isLoading } = useQuery({
-  queryKey: ['gastos'],
-  queryFn: () => gastosService.getAll()
+const { data: ingresos, isLoading } = useQuery({
+  queryKey: ['ingresos'],
+  queryFn: () => ingresosService.getAll()
 })
 
 const { data: categorias } = useQuery({
-  queryKey: ['categorias-gasto'],
-  queryFn: () => categoriasService.getForGastos()
+  queryKey: ['categorias-ingreso'],
+  queryFn: () => categoriasService.getForIngresos()
 })
 
-// Filtro por categorías
+// Filtro por categoria
 const selectedCategorias = ref([])
 
-const gastosFiltrados = computed(() => {
-  if (!gastos.value) return []
-  if (selectedCategorias.value.length === 0) return gastos.value
+const ingresosFiltrados = computed(() => {
+  if (!ingresos.value) return []
+  if (selectedCategorias.value.length === 0) return ingresos.value
 
   const selectedIds = selectedCategorias.value.map(c => c.id)
-  return gastos.value.filter(g => selectedIds.includes(g.categoriaId))
+  return ingresos.value.filter(i => selectedIds.includes(i.categoriaId))
 })
 
 const clearFilter = () => {
@@ -57,76 +58,73 @@ const clearFilter = () => {
 }
 
 // Mutations
-// Invalida todas las queries relacionadas con gastos
-const invalidateGastosQueries = () => {
-  queryClient.invalidateQueries({ queryKey: ['gastos'] })
-  queryClient.invalidateQueries({ queryKey: ['presupuestos'] })
-  queryClient.invalidateQueries({ queryKey: ['presupuestos-reporte'] })
+const invalidateIngresosQueries = () => {
+  queryClient.invalidateQueries({ queryKey: ['ingresos'] })
   queryClient.invalidateQueries({ queryKey: ['resumen-mensual'] })
-  queryClient.invalidateQueries({ queryKey: ['gastos-categoria'] })
-  queryClient.invalidateQueries({ queryKey: ['evolucion-mensual'] })
 }
 
 const createMutation = useMutation({
-  mutationFn: gastosService.create,
+  mutationFn: ingresosService.create,
   onSuccess: () => {
-    invalidateGastosQueries()
-    toast.add({ severity: 'success', summary: 'Éxito', detail: 'Gasto creado correctamente', life: 3000 })
+    invalidateIngresosQueries()
+    toast.add({ severity: 'success', summary: 'Exito', detail: 'Ingreso creado correctamente', life: 3000 })
     closeDialog()
   },
   onError: (error) => {
-    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al crear gasto', life: 5000 })
+    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al crear ingreso', life: 5000 })
   }
 })
 
 const updateMutation = useMutation({
-  mutationFn: ({ id, data }) => gastosService.update(id, data),
+  mutationFn: ({ id, data }) => ingresosService.update(id, data),
   onSuccess: () => {
-    invalidateGastosQueries()
-    toast.add({ severity: 'success', summary: 'Éxito', detail: 'Gasto actualizado correctamente', life: 3000 })
+    invalidateIngresosQueries()
+    toast.add({ severity: 'success', summary: 'Exito', detail: 'Ingreso actualizado correctamente', life: 3000 })
     closeDialog()
   },
   onError: (error) => {
-    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al actualizar gasto', life: 5000 })
+    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al actualizar ingreso', life: 5000 })
   }
 })
 
 const deleteMutation = useMutation({
-  mutationFn: gastosService.delete,
+  mutationFn: ingresosService.delete,
   onSuccess: () => {
-    invalidateGastosQueries()
-    toast.add({ severity: 'success', summary: 'Éxito', detail: 'Gasto eliminado correctamente', life: 3000 })
+    invalidateIngresosQueries()
+    toast.add({ severity: 'success', summary: 'Exito', detail: 'Ingreso eliminado correctamente', life: 3000 })
   },
   onError: (error) => {
-    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al eliminar gasto', life: 5000 })
+    toast.add({ severity: 'error', summary: 'Error', detail: error.response?.data?.message || 'Error al eliminar ingreso', life: 5000 })
   }
 })
 
 const openNewDialog = () => {
-  editingGasto.value = null
+  editingIngreso.value = null
   form.value = {
     monto: null,
     fecha: new Date(),
     categoriaId: null,
+    concepto: '',
     descripcion: ''
   }
   showDialog.value = true
 }
 
-const openEditDialog = (gasto) => {
-  editingGasto.value = gasto
+const openEditDialog = (ingreso) => {
+  editingIngreso.value = ingreso
   form.value = {
-    monto: gasto.monto,
-    fecha: new Date(gasto.fecha),
-    categoriaId: gasto.categoriaId,
-    descripcion: gasto.descripcion || ''
+    monto: ingreso.monto,
+    fecha: new Date(ingreso.fecha),
+    categoriaId: ingreso.categoriaId,
+    concepto: ingreso.concepto || '',
+    descripcion: ingreso.descripcion || ''
   }
   showDialog.value = true
 }
 
 const closeDialog = () => {
   showDialog.value = false
-  editingGasto.value = null
+  editingIngreso.value = null
 }
 
 const handleSubmit = () => {
@@ -135,20 +133,20 @@ const handleSubmit = () => {
     fecha: form.value.fecha.toISOString().split('T')[0]
   }
 
-  if (editingGasto.value) {
-    updateMutation.mutate({ id: editingGasto.value.id, data })
+  if (editingIngreso.value) {
+    updateMutation.mutate({ id: editingIngreso.value.id, data })
   } else {
     createMutation.mutate(data)
   }
 }
 
-const confirmDelete = (gasto) => {
+const confirmDelete = (ingreso) => {
   confirm.require({
-    message: '¿Estás seguro de eliminar este gasto?',
-    header: 'Confirmar Eliminación',
+    message: 'Estas seguro de eliminar este ingreso?',
+    header: 'Confirmar Eliminacion',
     icon: 'pi pi-exclamation-triangle',
     acceptClass: 'p-button-danger',
-    accept: () => deleteMutation.mutate(gasto.id)
+    accept: () => deleteMutation.mutate(ingreso.id)
   })
 }
 
@@ -167,28 +165,28 @@ const formatDate = (date) => {
 <template>
   <div>
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">Gastos</h1>
+      <h1 class="text-2xl font-bold text-gray-800">Ingresos</h1>
       <Button
-        label="Nuevo Gasto"
+        label="Nuevo Ingreso"
         icon="pi pi-plus"
         @click="openNewDialog"
       />
     </div>
 
-    <!-- Filtro por categorías -->
+    <!-- Filtro por categoria -->
     <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
       <div class="flex items-center gap-3">
-        <label class="text-sm font-medium text-gray-700">Filtrar por categoría:</label>
+        <label class="text-sm font-medium text-gray-700">Filtrar por categoria:</label>
         <MultiSelect
           v-model="selectedCategorias"
           :options="categorias ?? []"
           optionLabel="nombre"
-          placeholder="Todas las categorías"
+          placeholder="Todas las categorias"
           :maxSelectedLabels="3"
           class="w-80"
           display="chip"
           filter
-          filterPlaceholder="Buscar categoría..."
+          filterPlaceholder="Buscar categoria..."
         >
           <template #option="{ option }">
             <div class="flex items-center">
@@ -215,7 +213,7 @@ const formatDate = (date) => {
 
     <div class="bg-white rounded-lg shadow-sm">
       <DataTable
-        :value="gastosFiltrados"
+        :value="ingresosFiltrados"
         :loading="isLoading"
         paginator
         :rows="10"
@@ -227,7 +225,7 @@ const formatDate = (date) => {
         <template #empty>
           <div class="text-center py-8 text-gray-400">
             <i class="pi pi-inbox text-4xl mb-2"></i>
-            <p>No hay gastos registrados</p>
+            <p>No hay ingresos registrados</p>
           </div>
         </template>
 
@@ -237,7 +235,7 @@ const formatDate = (date) => {
           </template>
         </Column>
 
-        <Column field="categoriaNombre" header="Categoría">
+        <Column field="categoriaNombre" header="Categoria">
           <template #body="{ data }">
             <Tag :style="{ backgroundColor: data.categoriaColor }" class="text-white">
               <i :class="data.categoriaIcono" class="mr-1"></i>
@@ -246,7 +244,13 @@ const formatDate = (date) => {
           </template>
         </Column>
 
-        <Column field="descripcion" header="Descripción">
+        <Column field="concepto" header="Concepto">
+          <template #body="{ data }">
+            <span class="font-medium">{{ data.concepto }}</span>
+          </template>
+        </Column>
+
+        <Column field="descripcion" header="Descripcion">
           <template #body="{ data }">
             <span class="text-gray-600">{{ data.descripcion || '-' }}</span>
           </template>
@@ -254,7 +258,7 @@ const formatDate = (date) => {
 
         <Column field="monto" header="Monto" sortable>
           <template #body="{ data }">
-            <span class="font-semibold">{{ formatCurrency(data.monto) }}</span>
+            <span class="font-semibold text-green-600">{{ formatCurrency(data.monto) }}</span>
           </template>
         </Column>
 
@@ -280,7 +284,7 @@ const formatDate = (date) => {
     <!-- Dialog para crear/editar -->
     <Dialog
       v-model:visible="showDialog"
-      :header="editingGasto ? 'Editar Gasto' : 'Nuevo Gasto'"
+      :header="editingIngreso ? 'Editar Ingreso' : 'Nuevo Ingreso'"
       :modal="true"
       :style="{ width: '450px' }"
     >
@@ -308,13 +312,13 @@ const formatDate = (date) => {
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
           <Dropdown
             v-model="form.categoriaId"
             :options="categorias"
             optionLabel="nombre"
             optionValue="id"
-            placeholder="Selecciona una categoría"
+            placeholder="Selecciona una categoria"
             class="w-full"
             required
           >
@@ -328,12 +332,22 @@ const formatDate = (date) => {
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Concepto</label>
+          <InputText
+            v-model="form.concepto"
+            class="w-full"
+            placeholder="Ej: Sueldo de Enero"
+            required
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
           <Textarea
             v-model="form.descripcion"
             rows="3"
             class="w-full"
-            placeholder="Descripción opcional..."
+            placeholder="Descripcion opcional..."
           />
         </div>
 
@@ -345,7 +359,7 @@ const formatDate = (date) => {
           />
           <Button
             type="submit"
-            :label="editingGasto ? 'Guardar' : 'Crear'"
+            :label="editingIngreso ? 'Guardar' : 'Crear'"
             :loading="createMutation.isPending.value || updateMutation.isPending.value"
           />
         </div>
@@ -359,6 +373,7 @@ const formatDate = (date) => {
 :deep(.p-calendar),
 :deep(.p-dropdown),
 :deep(.p-inputtextarea),
+:deep(.p-inputtext),
 :deep(.p-multiselect) {
   width: 100%;
 }
