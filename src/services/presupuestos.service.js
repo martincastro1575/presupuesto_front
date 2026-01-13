@@ -3,8 +3,9 @@ import api from './api'
 // Helper para extraer array de la respuesta
 const extractArray = (data) => {
   if (Array.isArray(data)) return data
+  if (data?.data?.items) return data.data.items
   if (data?.items) return data.items
-  if (data?.data) return data.data
+  if (data?.data && Array.isArray(data.data)) return data.data
   return []
 }
 
