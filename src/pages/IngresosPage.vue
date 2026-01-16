@@ -61,6 +61,8 @@ const clearFilter = () => {
 const invalidateIngresosQueries = () => {
   queryClient.invalidateQueries({ queryKey: ['ingresos'] })
   queryClient.invalidateQueries({ queryKey: ['resumen-mensual'] })
+  queryClient.invalidateQueries({ queryKey: ['evolucion-mensual'] })
+  queryClient.invalidateQueries({ queryKey: ['ingresos-categoria'] })
 }
 
 const createMutation = useMutation({
