@@ -65,6 +65,7 @@ const invalidateGastosQueries = () => {
   queryClient.invalidateQueries({ queryKey: ['resumen-mensual'] })
   queryClient.invalidateQueries({ queryKey: ['gastos-categoria'] })
   queryClient.invalidateQueries({ queryKey: ['evolucion-mensual'] })
+  queryClient.invalidateQueries({ queryKey: ['limites-categorias'] })
 }
 
 const createMutation = useMutation({

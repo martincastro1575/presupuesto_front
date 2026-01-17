@@ -47,6 +47,11 @@ const routes = [
         component: () => import('@/pages/PresupuestosPage.vue')
       },
       {
+        path: 'limites-categorias',
+        name: 'limites-categorias',
+        component: () => import('@/pages/LimitesCategoriasPage.vue')
+      },
+      {
         path: 'reportes',
         name: 'reportes',
         component: () => import('@/pages/ReportesPage.vue')
