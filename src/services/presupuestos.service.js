@@ -26,7 +26,8 @@ export const presupuestosService = {
   },
 
   async update(id, data) {
-    const response = await api.put(`/Presupuestos/${id}`, data)
+    // POST con ID incluido para actualizar (el backend no soporta PUT)
+    const response = await api.post('/Presupuestos', { id, ...data })
     return response.data
   },
 
