@@ -60,6 +60,7 @@ src/
 │   ├── IngresosPage.vue
 │   ├── CategoriasPage.vue
 │   ├── PresupuestosPage.vue
+│   ├── LimitesCategoriasPage.vue
 │   └── ReportesPage.vue
 ├── router/             # Configuracion de rutas
 ├── services/           # Servicios de API
@@ -69,6 +70,7 @@ src/
 │   ├── gastos.service.js
 │   ├── ingresos.service.js
 │   ├── presupuestos.service.js
+│   ├── limitesCategorias.service.js
 │   └── reportes.service.js
 ├── stores/             # Stores de Pinia
 ├── utils/              # Utilidades
@@ -85,6 +87,7 @@ src/
 | `/ingresos` | Ingresos | CRUD de ingresos con filtro por categoria |
 | `/categorias` | Categorias | Gestion de categorias (Gasto, Ingreso o Ambos) |
 | `/presupuestos` | Presupuestos | Configuracion de presupuestos por categoria |
+| `/limites-categorias` | Limites de Categorias | Configuracion de limites de gasto por categoria y periodo |
 | `/reportes` | Reportes | Graficos comparativos de ingresos/gastos por categoria y evolucion |
 | `/auth/login` | Login | Inicio de sesion |
 | `/auth/register` | Registro | Registro de usuario |
@@ -166,6 +169,64 @@ const gastosPorCategoria = await reportesService.getGastosPorCategoria(2024, 1)
 
 // Ingresos agrupados por categoria
 const ingresosPorCategoria = await reportesService.getIngresosPorCategoria(2024, 1)
+```
+
+### Presupuestos
+```javascript
+import { presupuestosService } from '@/services/presupuestos.service'
+
+// Obtener todos los presupuestos
+const presupuestos = await presupuestosService.getAll()
+
+// Obtener presupuestos por periodo
+const presupuestosMes = await presupuestosService.getByPeriod(2024, 1)
+
+// Obtener presupuesto por id
+const presupuesto = await presupuestosService.getById(id)
+
+// Crear presupuesto
+await presupuestosService.create({ montoLimite: 50000, categoriaId: 1, anio: 2024, mes: 1 })
+
+// Actualizar presupuesto (POST con id incluido)
+await presupuestosService.update(id, { montoLimite: 60000, categoriaId: 1, anio: 2024, mes: 2 })
+
+// Eliminar presupuesto
+await presupuestosService.delete(id)
+```
+
+### Limites de Categorias
+```javascript
+import { limitesCategoriasService } from '@/services/limitesCategorias.service'
+
+// Obtener todos los limites
+const limites = await limitesCategoriasService.getAll()
+
+// Obtener limites por periodo
+const limitesMes = await limitesCategoriasService.getByPeriodo(2024, 1)
+
+// Obtener limite por id
+const limite = await limitesCategoriasService.getById(id)
+
+// Obtener limite por categoria y periodo
+const limite = await limitesCategoriasService.getByCategoriaYPeriodo(categoriaId, 2024, 1)
+
+// Obtener historico de una categoria
+const historico = await limitesCategoriasService.getHistoricoByCategoria(categoriaId)
+
+// Crear o actualizar limite
+await limitesCategoriasService.createOrUpdate({ montoLimite: 30000, categoriaId: 1, anio: 2024, mes: 1 })
+
+// Crear lote de limites
+await limitesCategoriasService.createLote([...])
+
+// Actualizar limite
+await limitesCategoriasService.update(id, { montoLimite: 40000 })
+
+// Eliminar limite
+await limitesCategoriasService.delete(id)
+
+// Copiar limites de un periodo a otro
+await limitesCategoriasService.copiarPeriodo(2024, 1, 2024, 2)
 ```
 
 ### Categorias
